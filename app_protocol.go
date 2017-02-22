@@ -4,11 +4,12 @@ import (
 	"bufio"
 	"encoding/binary"
 	"fmt"
+	"github.com/funny/link"
+	proto "github.com/golang/protobuf/proto"
 	"io"
+	"log"
 	"net"
 	"time"
-
-	"github.com/funny/link"
 )
 
 func (app *App) newClientCodec(rw io.ReadWriter) (link.Codec, error) {
@@ -65,6 +66,11 @@ func (c *codec) Conn() net.Conn {
 	return c.conn
 }
 
+type AddReq struct {
+	A int32 `protobuf:"varint,1,opt,name=A,json=a" json:"A,omitempty"`
+	B int32 `protobuf:"varint,2,opt,name=B,json=b" json:"B,omitempty"`
+}
+
 func (c *codec) Receive() (msg interface{}, err error) {
 	if c.app.RecvTimeout > 0 {
 		c.conn.SetReadDeadline(time.Now().Add(c.app.RecvTimeout))
@@ -92,7 +98,8 @@ func (c *codec) Receive() (msg interface{}, err error) {
 						err = DecodeError{panicErr}
 					}
 				}()
-				msg1.UnmarshalPacket(packet)
+				err = proto.Unmarshal(packet, msg1)
+				// msg1.UnmarshalPacket(packet)
 			}()
 			msg = msg1
 		} else {
@@ -107,7 +114,8 @@ func (c *codec) Receive() (msg interface{}, err error) {
 func (c *codec) Send(m interface{}) (err error) {
 	msg := m.(Message)
 
-	packetSize := msg.BinarySize()
+	// packetSize := msg.BinarySize()
+	packetSize := proto.Size(msg)
 
 	if packetSize > c.app.MaxSendSize {
 		panic(EncodeError{fmt.Sprintf("Too Large Send Packet Size: %d", packetSize)})
@@ -124,7 +132,12 @@ func (c *codec) Send(m interface{}) (err error) {
 				err = EncodeError{panicErr}
 			}
 		}()
-		msg.MarshalPacket(packet[packetHeadSize:])
+		// msg.MarshalPacket(packet[packetHeadSize:])
+		// proto.Marshal()
+		pb := []byte{}
+		pb, err = proto.Marshal(msg)
+		copy(packet[packetHeadSize:], pb)
+
 	}()
 
 	if c.app.SendTimeout > 0 {
@@ -153,10 +166,15 @@ func (f *msgFormat) EncodeMessage(msg interface{}) (buf []byte, err error) {
 			err = EncodeError{panicErr}
 		}
 	}()
-	buf = make([]byte, 2+msg2.BinarySize())
+	buf = make([]byte, 2+proto.Size(msg2))
 	buf[0] = msg2.ServiceID()
 	buf[1] = msg2.MessageID()
-	msg2.MarshalPacket(buf[2:])
+	// msg2.MarshalPacket(buf[2:])
+	pb, err := proto.Marshal(msg2)
+	if err != nil {
+		log.Fatal("marshaling error: ", err)
+	}
+	copy(buf[2:], pb)
 	return
 }
 
@@ -169,7 +187,11 @@ func (f *msgFormat) DecodeMessage(buf []byte) (msg interface{}, err error) {
 	var msg2 Message
 	msg2, err = f.newMessage(buf[0], buf[1])
 	if err == nil {
-		msg2.UnmarshalPacket(buf[2:])
+		// msg2.UnmarshalPacket(buf[2:])
+		err := proto.Unmarshal(buf[2:], msg2)
+		if err != nil {
+			log.Fatal(" send unmarshaling error: ", err)
+		}
 		msg = msg2
 	}
 	return

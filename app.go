@@ -72,6 +72,10 @@ func (app *App) Dial(network, address string) (*link.Session, error) {
 	return link.Dial(network, address, link.ProtocolFunc(app.newClientCodec), app.SendChanSize)
 }
 
+func (app *App) WSDial(address string) (*link.Session, error) {
+	return link.WSDial(address, link.ProtocolFunc(app.newClientCodec), app.SendChanSize)
+}
+
 func (app *App) Listen(network, address string, handler Handler) (*link.Server, error) {
 	listener, err := net.Listen(network, address)
 	if err != nil {

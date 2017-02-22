@@ -7,7 +7,7 @@ import (
 
 	"github.com/funny/fastapi"
 	"github.com/funny/fastapi/example/fastapi_toy/module1"
-	"github.com/funny/fastbin"
+	// "github.com/funny/fastbin"
 )
 
 func main() {
@@ -19,22 +19,23 @@ func main() {
 
 	if *gencode {
 		fastapi.GenCode(app)
-		fastbin.GenCode()
+		// fastbin.GenCode()
 		return
 	}
 
-	server, err := app.Listen("tcp", "0.0.0.0:0", nil)
+	server, err := app.Listen("tcp", "127.0.0.1:8989", nil)
 	if err != nil {
 		log.Fatal("setup server failed:", err)
 	}
-	go server.Serve()
+	// go server.Serve()
+	go server.WSServe()
 
-	client, err := app.Dial("tcp", server.Listener().Addr().String())
+	client, err := app.WSDial("ws://127.0.0.1:8989")
 	if err != nil {
 		log.Fatal("setup client failed:", err)
 	}
 
-	for i := 0; i < 10; i++ {
+	for i := int32(0); i < 10; i++ {
 		err := client.Send(&module1.AddReq{i, i})
 		if err != nil {
 			log.Fatal("send failed:", err)

@@ -8,8 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"text/template"
-
-	"github.com/funny/fastbin"
+	// "github.com/funny/fastbin"
 )
 
 func GenCode(app *App, apps ...*App) {
@@ -32,10 +31,9 @@ func GenCode(app *App, apps ...*App) {
 			filepath.Base(pkg.Path)+".fastapi.go",
 			genPackage(pkg),
 		)
-
-		for _, msg := range pkg.Messages {
-			fastbin.RegisterType(msg.Type())
-		}
+		// for _, msg := range pkg.Messages {
+		// 	fastbin.RegisterType(msg.Type())
+		// }
 	}
 }
 

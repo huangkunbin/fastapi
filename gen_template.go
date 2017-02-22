@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/funny/link"
+	proto "github.com/golang/protobuf/proto"
 )
 
 type Service interface {
@@ -17,9 +18,7 @@ type Message interface {
 	ServiceID() byte
 	MessageID() byte
 	Identity() string
-	BinarySize() int
-	MarshalPacket([]byte)
-	UnmarshalPacket([]byte)
+	proto.Message
 }
 
 type EncodeError struct {
